@@ -9,8 +9,9 @@ app.use(express.json());
 
 // 🔹 Conexão com seu banco PostgreSQL no Render
 const pool = new Pool({
-  connectionString: "postgresql://chat_db_93e6_user:xWGz5hB1P2PJFaZvrcgzzvg1tt3HSAsH@dpg-d3j1vvt6ubrc73a06240-a.oregon-postgres.render.com/chat_db_93e6",
-  ssl: { rejectUnauthorized: false } // importante para conexão segura na nuvem
+  connectionString:
+    "postgresql://chat_db_93e6_user:xWGz5hB1P2PJFaZvrcgzzvg1tt3HSAsH@dpg-d3j1vvt6ubrc73a06240-a.oregon-postgres.render.com/chat_db_93e6",
+  ssl: { rejectUnauthorized: false },
 });
 
 // 🔹 Cria tabela automaticamente (se não existir)
@@ -49,7 +50,10 @@ app.post("/mensagens", async (req, res) => {
   }
 
   try {
-    await pool.query("INSERT INTO mensagens (nome, mensagem) VALUES ($1, $2)", [nome, mensagem]);
+    await pool.query(
+      "INSERT INTO mensagens (nome, mensagem) VALUES ($1, $2)",
+      [nome, mensagem]
+    );
     res.json({ status: "Mensagem salva com sucesso!" });
   } catch (err) {
     console.error(err);
@@ -57,7 +61,25 @@ app.post("/mensagens", async (req, res) => {
   }
 });
 
-// 🔹 Rota de teste (opcional)
+// 🔹 Rota para excluir mensagem pelo ID
+app.delete("/mensagens/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM mensagens WHERE id = $1 RETURNING *",
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ erro: "Mensagem não encontrada" });
+    }
+    res.json({ sucesso: true, mensagem: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: "Erro ao excluir mensagem" });
+  }
+});
+
+// 🔹 Rota de teste
 app.get("/", (req, res) => {
   res.send("Servidor Node.js + PostgreSQL está rodando com sucesso!");
 });
